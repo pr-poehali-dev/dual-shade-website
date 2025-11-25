@@ -1,36 +1,38 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 25 20% 8%;
+    --foreground: 48 100% 50%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 240 63% 13%;
+    --card-foreground: 48 100% 96%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 240 63% 13%;
+    --popover-foreground: 48 100% 96%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 240 63% 13%;
+    --primary-foreground: 48 100% 50%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 0 65% 42%;
+    --secondary-foreground: 48 100% 96%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 240 20% 20%;
+    --muted-foreground: 48 30% 70%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 48 100% 50%;
+    --accent-foreground: 240 63% 13%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 65% 42%;
+    --destructive-foreground: 48 100% 96%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 48 100% 50%;
+    --input: 240 30% 20%;
+    --ring: 48 100% 50%;
 
     --radius: 0.5rem;
 
@@ -97,5 +99,71 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Montserrat", sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Cormorant", serif;
+  }
+
+  .golden-frame {
+    position: relative;
+    padding: 2rem;
+    background: linear-gradient(
+      135deg,
+      rgba(25, 25, 112, 0.8),
+      rgba(178, 34, 34, 0.8)
+    );
+    border: 8px solid #ffd700;
+    border-radius: 12px;
+    box-shadow:
+      0 0 0 4px rgba(139, 69, 19, 0.6),
+      0 0 0 8px #ffd700,
+      inset 0 0 40px rgba(255, 215, 0, 0.1),
+      0 20px 50px rgba(0, 0, 0, 0.6);
+  }
+
+  .golden-frame::before {
+    content: "";
+    position: absolute;
+    top: -12px;
+    left: -12px;
+    right: -12px;
+    bottom: -12px;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 215, 0, 0.1) 10px,
+      rgba(255, 215, 0, 0.1) 20px
+    );
+    border-radius: 16px;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .golden-frame::after {
+    content: "";
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    pointer-events: none;
+  }
+
+  .hover-scale {
+    transition: transform 0.2s ease;
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.05);
   }
 }
