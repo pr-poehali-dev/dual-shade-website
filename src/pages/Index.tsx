@@ -28,21 +28,6 @@ const Index = () => {
           >
             Начать новую игру
           </Button>
-
-          <div className="grid grid-cols-3 gap-6 mt-12 text-center">
-            <div className="space-y-2">
-              <div className="text-4xl">⚔️</div>
-              <p className="text-foreground/70">Сила</p>
-            </div>
-            <div className="space-y-2">
-              <div className="text-4xl">⚡</div>
-              <p className="text-foreground/70">Ловкость</p>
-            </div>
-            <div className="space-y-2">
-              <div className="text-4xl">🧠</div>
-              <p className="text-foreground/70">Интеллект</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
