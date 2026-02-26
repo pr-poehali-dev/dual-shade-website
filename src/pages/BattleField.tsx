@@ -18,6 +18,12 @@ interface Attack {
   icon: string;
 }
 
+const NAMAE_VIDEOS: Record<string, string> = {
+  'Обычная атака': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/7e9cc05d-b3f7-4643-a2bd-21ecf622c818.mp4',
+  'Атака силами': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/969e82cb-5fc7-4165-9537-f5857ecc3872.mp4',
+  'Супер атака': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/1518d3eb-2837-4ad9-b930-8ca0a32d7e7f.mp4',
+};
+
 const BattleField = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -33,6 +39,7 @@ const BattleField = () => {
   const [team2Score, setTeam2Score] = useState(0);
   const [showAttackSelection, setShowAttackSelection] = useState(false);
   const [selectedCard, setSelectedCard] = useState<{ team: 1 | 2; index: number } | null>(null);
+  const [namaeVideo, setNamaeVideo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initialTeam1 || !initialTeam2) {
@@ -79,7 +86,7 @@ const BattleField = () => {
     setShowAttackSelection(false);
   };
 
-  const handleTargetSelect = (targetIndex: number) => {
+  const applyDamage = (targetIndex: number) => {
     if (!selectedAttack || selectedAttacker === null) return;
 
     const targetTeam = currentTurn === 1 ? team2 : team1;
@@ -103,14 +110,29 @@ const BattleField = () => {
       }
     }
 
-    setTimeout(() => {
-      setCurrentTurn(currentTurn === 1 ? 2 : 1);
-      setSelectedAttacker(null);
-      setSelectedAttack(null);
-      setShowAttackSelection(false);
-      setSelectedCard(null);
-      setTimeLeft(120);
-    }, 500);
+    setCurrentTurn(currentTurn === 1 ? 2 : 1);
+    setSelectedAttacker(null);
+    setSelectedAttack(null);
+    setShowAttackSelection(false);
+    setSelectedCard(null);
+    setTimeLeft(120);
+  };
+
+  const handleTargetSelect = (targetIndex: number) => {
+    if (!selectedAttack || selectedAttacker === null) return;
+
+    const attackerTeam = currentTurn === 1 ? team1 : team2;
+    const attacker = attackerTeam[selectedAttacker];
+
+    if (attacker.name === 'Намае' && NAMAE_VIDEOS[selectedAttack.name]) {
+      setNamaeVideo(NAMAE_VIDEOS[selectedAttack.name]);
+      setTimeout(() => {
+        setNamaeVideo(null);
+        applyDamage(targetIndex);
+      }, 2500);
+    } else {
+      applyDamage(targetIndex);
+    }
   };
 
   const handleCardClick = (team: 1 | 2, index: number) => {
@@ -217,6 +239,18 @@ const BattleField = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-card to-background p-4">
+      {/* Namae attack animation overlay */}
+      {namaeVideo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 pointer-events-none">
+          <video
+            key={namaeVideo}
+            src={namaeVideo}
+            autoPlay
+            muted
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
+      )}
       {/* Score */}
       <div className="flex justify-center items-center gap-8 mb-4">
         <div className="text-4xl font-bold text-accent">
