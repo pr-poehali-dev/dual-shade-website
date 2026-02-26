@@ -8,15 +8,18 @@ import { useNavigate } from 'react-router-dom';
 interface Character {
   name: string;
   health: number;
+  normalAttack: number;
+  powerAttack: number;
+  superAttack: number;
 }
 
 const CHARACTERS: Character[] = [
-  { name: 'Рай', health: 100 },
-  { name: 'Китсуми', health: 100 },
-  { name: 'Иоширо', health: 100 },
-  { name: 'Намае', health: 100 },
-  { name: 'Вхуу', health: 100 },
-  { name: 'Киота', health: 100 },
+  { name: 'Иоширо', health: 10, normalAttack: 2, powerAttack: 3, superAttack: 4 },
+  { name: 'Намае',  health: 10, normalAttack: 2, powerAttack: 3, superAttack: 4 },
+  { name: 'Китсуми', health: 10, normalAttack: 1, powerAttack: 3, superAttack: 5 },
+  { name: 'Ида',   health: 10, normalAttack: 1, powerAttack: 3, superAttack: 4 },
+  { name: 'Киота', health: 10, normalAttack: 1, powerAttack: 2, superAttack: 5 },
+  { name: 'Рай',   health: 10, normalAttack: 2, powerAttack: 3, superAttack: 5 },
 ];
 
 const GameSelection = () => {
