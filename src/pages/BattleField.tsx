@@ -18,10 +18,17 @@ interface Attack {
   icon: string;
 }
 
-const NAMAE_VIDEOS: Record<string, string> = {
-  'Обычная атака': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/7e9cc05d-b3f7-4643-a2bd-21ecf622c818.mp4',
-  'Атака силами': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/969e82cb-5fc7-4165-9537-f5857ecc3872.mp4',
-  'Супер атака': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/1518d3eb-2837-4ad9-b930-8ca0a32d7e7f.mp4',
+const CHARACTER_VIDEOS: Record<string, Record<string, string>> = {
+  'Намае': {
+    'Обычная атака': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/7e9cc05d-b3f7-4643-a2bd-21ecf622c818.mp4',
+    'Атака силами': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/969e82cb-5fc7-4165-9537-f5857ecc3872.mp4',
+    'Супер атака': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/1518d3eb-2837-4ad9-b930-8ca0a32d7e7f.mp4',
+  },
+  'Рай': {
+    'Обычная атака': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/99b64e90-a703-4d2b-8a1f-81ce9b73d73e.mp4',
+    'Атака силами': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/1d2aff84-c4d3-4590-8f3a-b511c10835d3.mp4',
+    'Супер атака': 'https://cdn.poehali.dev/projects/9a7aeb20-d1d7-40c0-ac4e-34383f5fd98e/bucket/8011ebfa-6202-4973-8eca-f65bfa34eecd.mp4',
+  },
 };
 
 const BattleField = () => {
@@ -39,7 +46,7 @@ const BattleField = () => {
   const [team2Score, setTeam2Score] = useState(0);
   const [showAttackSelection, setShowAttackSelection] = useState(false);
   const [selectedCard, setSelectedCard] = useState<{ team: 1 | 2; index: number } | null>(null);
-  const [namaeVideo, setNamaeVideo] = useState<string | null>(null);
+  const [attackVideo, setAttackVideo] = useState<{ url: string; targetIndex: number } | null>(null);
 
   useEffect(() => {
     if (!initialTeam1 || !initialTeam2) {
@@ -123,13 +130,10 @@ const BattleField = () => {
 
     const attackerTeam = currentTurn === 1 ? team1 : team2;
     const attacker = attackerTeam[selectedAttacker];
+    const videoUrl = CHARACTER_VIDEOS[attacker.name]?.[selectedAttack.name];
 
-    if (attacker.name === 'Намае' && NAMAE_VIDEOS[selectedAttack.name]) {
-      setNamaeVideo(NAMAE_VIDEOS[selectedAttack.name]);
-      setTimeout(() => {
-        setNamaeVideo(null);
-        applyDamage(targetIndex);
-      }, 2500);
+    if (videoUrl) {
+      setAttackVideo({ url: videoUrl, targetIndex });
     } else {
       applyDamage(targetIndex);
     }
@@ -239,15 +243,20 @@ const BattleField = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-card to-background p-4">
-      {/* Namae attack animation overlay */}
-      {namaeVideo && (
+      {/* Character attack animation overlay */}
+      {attackVideo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 pointer-events-none">
           <video
-            key={namaeVideo}
-            src={namaeVideo}
+            key={attackVideo.url}
+            src={attackVideo.url}
             autoPlay
             muted
             className="max-w-full max-h-full object-contain"
+            onEnded={() => {
+              const idx = attackVideo.targetIndex;
+              setAttackVideo(null);
+              applyDamage(idx);
+            }}
           />
         </div>
       )}
