@@ -10,6 +10,8 @@ interface Character {
   normalAttack: number;
   powerAttack: number;
   superAttack: number;
+  shield?: number;
+  damageReduction?: number;
 }
 
 interface Attack {
@@ -46,7 +48,9 @@ const BattleField = () => {
   const [team2Score, setTeam2Score] = useState(0);
   const [showAttackSelection, setShowAttackSelection] = useState(false);
   const [selectedCard, setSelectedCard] = useState<{ team: 1 | 2; index: number } | null>(null);
-  const [attackVideo, setAttackVideo] = useState<{ url: string; targetIndex: number } | null>(null);
+  const [attackVideo, setAttackVideo] = useState<{ url: string; targetIndex: number; damage: number } | null>(null);
+  const [showBoostDialog, setShowBoostDialog] = useState(false);
+  const [pendingAttack, setPendingAttack] = useState<Attack | null>(null);
 
   useEffect(() => {
     if (!initialTeam1 || !initialTeam2) {
@@ -59,19 +63,24 @@ const BattleField = () => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          setCurrentTurn(currentTurn === 1 ? 2 : 1);
-          setSelectedAttacker(null);
-          setSelectedAttack(null);
-          setShowAttackSelection(false);
-          setSelectedCard(null);
+          endTurn();
           return 120;
         }
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [currentTurn]);
+
+  const endTurn = () => {
+    setCurrentTurn(t => t === 1 ? 2 : 1);
+    setSelectedAttacker(null);
+    setSelectedAttack(null);
+    setShowAttackSelection(false);
+    setSelectedCard(null);
+    setPendingAttack(null);
+    setShowBoostDialog(false);
+  };
 
   const getAttacksForChar = (char: Character): Attack[] => [
     { name: 'Обычная атака', damage: char.normalAttack, icon: 'Sword' },
@@ -89,35 +98,52 @@ const BattleField = () => {
   };
 
   const handleAttackSelect = (attack: Attack) => {
-    setSelectedAttack(attack);
     setShowAttackSelection(false);
+    setPendingAttack(attack);
+    setShowBoostDialog(true);
   };
 
-  const applyDamage = (targetIndex: number) => {
-    if (!selectedAttack || selectedAttacker === null) return;
+  const handleBoostChoice = (boost: number) => {
+    if (!pendingAttack) return;
+    const boosted: Attack = { ...pendingAttack, damage: pendingAttack.damage + boost };
+    setSelectedAttack(boosted);
+    setPendingAttack(null);
+    setShowBoostDialog(false);
+  };
+
+  const applyDamage = (targetIndex: number, damage: number) => {
+    if (selectedAttacker === null) return;
 
     const targetTeam = currentTurn === 1 ? team2 : team1;
     const setTargetTeam = currentTurn === 1 ? setTeam2 : setTeam1;
 
     if (targetTeam[targetIndex].health <= 0) return;
 
-    const newTeam = [...targetTeam];
-    newTeam[targetIndex] = {
-      ...newTeam[targetIndex],
-      health: Math.max(0, newTeam[targetIndex].health - selectedAttack.damage),
-    };
+    const target = targetTeam[targetIndex];
+    let finalDamage = damage;
 
-    setTargetTeam(newTeam);
-
-    if (newTeam[targetIndex].health <= 0) {
-      if (currentTurn === 1) {
-        setTeam1Score(prev => prev + 1);
-      } else {
-        setTeam2Score(prev => prev + 1);
+    if (target.shield && target.shield > 0) {
+      finalDamage = 0;
+      const newTeam = [...targetTeam];
+      newTeam[targetIndex] = { ...target, shield: target.shield - 1 };
+      setTargetTeam(newTeam);
+    } else {
+      if (target.damageReduction && target.damageReduction > 0) {
+        finalDamage = Math.max(0, damage - target.damageReduction);
+      }
+      const newTeam = [...targetTeam];
+      newTeam[targetIndex] = {
+        ...target,
+        health: Math.max(0, target.health - finalDamage),
+      };
+      setTargetTeam(newTeam);
+      if (newTeam[targetIndex].health <= 0) {
+        if (currentTurn === 1) setTeam1Score(prev => prev + 1);
+        else setTeam2Score(prev => prev + 1);
       }
     }
 
-    setCurrentTurn(currentTurn === 1 ? 2 : 1);
+    setCurrentTurn(t => t === 1 ? 2 : 1);
     setSelectedAttacker(null);
     setSelectedAttack(null);
     setShowAttackSelection(false);
@@ -133,9 +159,9 @@ const BattleField = () => {
     const videoUrl = CHARACTER_VIDEOS[attacker.name]?.[selectedAttack.name];
 
     if (videoUrl) {
-      setAttackVideo({ url: videoUrl, targetIndex });
+      setAttackVideo({ url: videoUrl, targetIndex, damage: selectedAttack.damage });
     } else {
-      applyDamage(targetIndex);
+      applyDamage(targetIndex, selectedAttack.damage);
     }
   };
 
@@ -162,6 +188,28 @@ const BattleField = () => {
     newTeam[index] = { ...newTeam[index], health: newTeam[index].health + 1 };
     setTeam(newTeam);
     setSelectedCard(null);
+    endTurn();
+  };
+
+  const handleShield = (team: 1 | 2, index: number, amount: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const setTeam = team === 1 ? setTeam1 : setTeam2;
+    const currentTeam = team === 1 ? team1 : team2;
+    const newTeam = [...currentTeam];
+    newTeam[index] = { ...newTeam[index], shield: (newTeam[index].shield || 0) + amount };
+    setTeam(newTeam);
+    setSelectedCard(null);
+    endTurn();
+  };
+
+  const handleDamageReduction = (team: 1 | 2, amount: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const setTeam = team === 1 ? setTeam1 : setTeam2;
+    const currentTeam = team === 1 ? team1 : team2;
+    const newTeam = currentTeam.map(c => ({ ...c, damageReduction: (c.damageReduction || 0) + amount }));
+    setTeam(newTeam);
+    setSelectedCard(null);
+    endTurn();
   };
 
   const handleAttackFromCard = (team: 1 | 2, index: number, e: React.MouseEvent) => {
@@ -202,6 +250,20 @@ const BattleField = () => {
         >
           <div className="h-full flex flex-col items-center justify-between">
             <h4 className="text-lg font-bold text-accent text-center leading-tight">{char.name}</h4>
+
+            <div className="flex gap-1 flex-wrap justify-center">
+              {(char.shield || 0) > 0 && (
+                <span className="text-xs bg-blue-500/20 border border-blue-400 text-blue-300 px-1 rounded">
+                  🛡️ ×{char.shield}
+                </span>
+              )}
+              {(char.damageReduction || 0) > 0 && (
+                <span className="text-xs bg-purple-500/20 border border-purple-400 text-purple-300 px-1 rounded">
+                  -{char.damageReduction} урон
+                </span>
+              )}
+            </div>
+
             <div className="w-full">
               <div className="text-xs text-foreground/70 text-center mb-1">HP</div>
               <div className="w-full bg-card rounded-full h-2 overflow-hidden border border-accent">
@@ -215,9 +277,8 @@ const BattleField = () => {
           </div>
         </Card>
 
-        {/* Popup menu on card click */}
         {isSelected && (
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-40 flex flex-col gap-1 min-w-[140px]">
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-40 flex flex-col gap-1 min-w-[160px]">
             <Button
               size="sm"
               className="bg-accent text-accent-foreground hover:bg-accent/80 text-xs font-bold"
@@ -234,6 +295,42 @@ const BattleField = () => {
             >
               <Icon name="Heart" size={14} className="mr-1" />
               Восстановить 1 хп
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-blue-400 text-blue-300 hover:bg-blue-400/10 text-xs font-bold"
+              onClick={(e) => handleShield(team, index, 1, e)}
+            >
+              <Icon name="Shield" size={14} className="mr-1" />
+              Щит от 1 удара
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-blue-400 text-blue-300 hover:bg-blue-400/10 text-xs font-bold"
+              onClick={(e) => handleShield(team, index, 2, e)}
+            >
+              <Icon name="ShieldCheck" size={14} className="mr-1" />
+              Щит от 2 ударов
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-purple-400 text-purple-300 hover:bg-purple-400/10 text-xs font-bold"
+              onClick={(e) => handleDamageReduction(team, 1, e)}
+            >
+              <Icon name="ArrowDownCircle" size={14} className="mr-1" />
+              Снизить урон всем -1
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-purple-400 text-purple-300 hover:bg-purple-400/10 text-xs font-bold"
+              onClick={(e) => handleDamageReduction(team, 2, e)}
+            >
+              <Icon name="ArrowDownCircle" size={14} className="mr-1" />
+              Снизить урон всем -2
             </Button>
           </div>
         )}
@@ -253,13 +350,14 @@ const BattleField = () => {
             muted
             className="max-w-full max-h-full object-contain"
             onEnded={() => {
-              const idx = attackVideo.targetIndex;
+              const { targetIndex, damage } = attackVideo;
               setAttackVideo(null);
-              applyDamage(idx);
+              applyDamage(targetIndex, damage);
             }}
           />
         </div>
       )}
+
       {/* Score */}
       <div className="flex justify-center items-center gap-8 mb-4">
         <div className="text-4xl font-bold text-accent">
@@ -286,7 +384,6 @@ const BattleField = () => {
       {/* Battle Field */}
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Team 1 */}
           <div className="golden-frame p-6">
             <h3 className="text-2xl text-center text-accent mb-4 font-bold">Команда 1</h3>
             <div className="grid grid-cols-3 gap-4">
@@ -294,7 +391,6 @@ const BattleField = () => {
             </div>
           </div>
 
-          {/* Team 2 */}
           <div className="golden-frame p-6">
             <h3 className="text-2xl text-center text-accent mb-4 font-bold">Команда 2</h3>
             <div className="grid grid-cols-3 gap-4">
@@ -342,7 +438,49 @@ const BattleField = () => {
           </div>
         )}
 
-        {/* Instructions */}
+        {/* Boost Dialog */}
+        {showBoostDialog && pendingAttack && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="golden-frame max-w-lg w-full mx-4">
+              <h3 className="text-2xl text-center text-accent mb-2 font-bold">
+                Повысить атаку?
+              </h3>
+              <p className="text-center text-foreground/60 mb-6 text-sm">
+                Базовый урон: <span className="text-accent font-bold">{pendingAttack.damage}</span>
+              </p>
+              <div className="grid grid-cols-3 gap-4">
+                <Button
+                  onClick={() => handleBoostChoice(0)}
+                  className="h-24 flex flex-col gap-1 bg-card border-2 border-muted text-foreground/70 hover:border-accent hover:text-accent"
+                  variant="outline"
+                >
+                  <Icon name="Minus" size={28} />
+                  <div className="font-bold">Нет</div>
+                  <div className="text-xs">Урон: {pendingAttack.damage}</div>
+                </Button>
+                <Button
+                  onClick={() => handleBoostChoice(1)}
+                  className="h-24 flex flex-col gap-1 bg-card border-2 border-yellow-500 text-yellow-400 hover:bg-yellow-500/10"
+                  variant="outline"
+                >
+                  <Icon name="TrendingUp" size={28} />
+                  <div className="font-bold">+1</div>
+                  <div className="text-xs">Урон: {pendingAttack.damage + 1}</div>
+                </Button>
+                <Button
+                  onClick={() => handleBoostChoice(2)}
+                  className="h-24 flex flex-col gap-1 bg-card border-2 border-orange-500 text-orange-400 hover:bg-orange-500/10"
+                  variant="outline"
+                >
+                  <Icon name="Flame" size={28} />
+                  <div className="font-bold">+2</div>
+                  <div className="text-xs">Урон: {pendingAttack.damage + 2}</div>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {selectedAttack && (
           <div className="text-center mt-6 animate-fade-in">
             <p className="text-2xl text-accent font-bold">
